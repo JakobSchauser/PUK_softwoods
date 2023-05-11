@@ -209,8 +209,7 @@ class DAG:
         return self.get_simulated_data(N).var(axis = 1)
 
     def mutate(self):
-        self._adja = self.adjacency_matrix.copy()
-
+        _adja = self.adjacency_matrix.copy().astype(float)
         # mutate edges
         for i in range(self.size):
             for j in range(self.size):
@@ -218,14 +217,19 @@ class DAG:
                     continue
                 if self.adjacency_matrix[i, j] == 0:
                     continue
-                if np.random.uniform(0, 1) < 0.1:
+
+                if np.random.uniform(0, 1) < 0.5:
                     edge = np.random.uniform(0.5, self.strength) * np.random.choice([-1, 1])
-                    self._adja[i, j] = edge
+                    _adja[i, j] = edge
                 else:
-                    self._adja[i, j] = self.adjacency_matrix[i, j]
+                    edge = self.adjacency_matrix[i, j]
+                    _adja[i, j] = self.adjacency_matrix[i, j]
+
+                if edge == 0:
+                    print("edge is 0", i, j)
 
         # make child
-        child = DAG(n = self.size, adjacency_matrix = self._adja, biass = self.biass, s)
+        child = DAG(n = self.size, adjacency_matrix = _adja, biass = self.biass, strength = self.strength)
         return child
 
     def get_simulated_data(self, N = 100):
