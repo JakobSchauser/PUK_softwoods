@@ -1,0 +1,2 @@
+Are we looking for a marginal distribution or simply a conditional distribution? ie. which variance are we talking about?
+
