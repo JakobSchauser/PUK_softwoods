@@ -52,23 +52,16 @@ class DAG:
         adjacency_matrix = np.zeros((n, n))
 
         for i in range(n):
-            hadnone = True
             for j in range(i+1, n):
                 if np.random.randint(0, 2) == 0:
                     edge = np.random.uniform(-strength, strength)
                 else:
                     edge = 0
-            
 
-                if (j == n-1) and hadnone:
-                    edge = np.random.uniform(1, strength) * np.random.choice([-1, 1])
                 if j < roots and i < roots:
                     edge = 0
                 adjacency_matrix[i, j] = edge
                 
-                if edge > 0:
-                    hadnone = False
-            
         # make sure each node has at least one parent
         for i in range(roots, n):
             if np.sum(adjacency_matrix[:, i]) == 0:
@@ -137,9 +130,9 @@ class DAG:
                 if self.adjacency_matrix[i, j] == 0:
                     continue
                 
-                numerator += (variances[j] - variances[i]) 
+                numerator += int(np.sign(variances[j] - variances[i]) > 0) + (variances[j] - variances[i])/(variances[j] + variances[i])
 
-        return numerator / np.sum(self.adjacency_matrix != 0) / np.sum(np.abs(variances))
+        return numerator 
         
     def plot(self):
         plt.figure(figsize=(8,8))
