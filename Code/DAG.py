@@ -129,8 +129,9 @@ class DAG:
 
                 if self.adjacency_matrix[i, j] == 0:
                     continue
-                
-                numerator += int(np.sign(variances[j] - variances[i]) > 0) + (variances[j] - variances[i])/(variances[j] + variances[i])
+                if (variances[i] + variances[j]) == 0:
+                    print("WTH")
+                numerator += int(np.sign(variances[j] - variances[i]) > 0) + (variances[j] - variances[i]) / np.max([variances[j] + variances[i], 1e-10])
 
         return numerator 
         
