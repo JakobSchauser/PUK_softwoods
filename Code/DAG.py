@@ -129,6 +129,7 @@ class DAG:
 
                 if self.adjacency_matrix[i, j] == 0:
                     continue
+                
                 if (variances[i] + variances[j]) == 0:
                     print("WTH")
                 numerator += int(np.sign(variances[j] - variances[i]) > 0) + (variances[j] - variances[i]) / np.max([variances[j] + variances[i], 1e-10])
@@ -202,7 +203,7 @@ class DAG:
     def get_simulated_var(self, N = 100):
         return self.get_simulated_data(N).var(axis = 1)
 
-    def mutate(self):
+    def mutate(self, p = 0.5):
         _adja = self.adjacency_matrix.copy().astype(float)
         # mutate edges
         for i in range(self.size):
@@ -212,8 +213,8 @@ class DAG:
                 if self.adjacency_matrix[i, j] == 0:
                     continue
 
-                if np.random.uniform(0, 1) < 0.5:
-                    edge = np.random.uniform(0.5, self.strength) * np.random.choice([-1, 1])
+                if np.random.uniform(0, 1) < p:
+                    edge = min(max(-self.strength, (_adja[i, j] + np.random.normal(0, self.strength/2))), self.strength)
                     _adja[i, j] = edge
                 else:
                     edge = self.adjacency_matrix[i, j]
