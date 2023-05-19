@@ -6,7 +6,7 @@ from pyvis.network import Network
 
 
 class DAG:
-    def __init__(self, adjacency_matrix = None, biass = None, n = 5, strength = 2, roots = 1, precalculate_paths = False):
+    def __init__(self, adjacency_matrix = None, biass = None, n = 5, strength = 2, roots = 1, precalculate_paths = False, integer = False):
         assert n > 0, "n must be greater than 0"
         assert roots > 0, "roots must be greater than 0"
         if biass is not None:
@@ -17,6 +17,7 @@ class DAG:
 
         self.strength = strength
         self.roots = roots
+        self.integer = integer
 
         if adjacency_matrix is not None:
             self.adjacency_matrix = adjacency_matrix
@@ -54,7 +55,10 @@ class DAG:
         for i in range(n):
             for j in range(i+1, n):
                 if np.random.randint(0, 2) == 0:
-                    edge = np.random.uniform(-strength, strength)
+                    if self.integer:
+                        edge = np.random.choice([i for i in range(-strength, strength+1) if i != 0])
+                    else:
+                        edge = np.random.uniform(-strength, strength)
                 else:
                     edge = 0
 
@@ -129,7 +133,7 @@ class DAG:
 
                 if self.adjacency_matrix[i, j] == 0:
                     continue
-                
+
                 if (variances[i] + variances[j]) == 0:
                     print("WTH")
                 numerator += int(np.sign(variances[j] - variances[i]) > 0) + (variances[j] - variances[i]) / np.max([variances[j] + variances[i], 1e-10])
@@ -141,11 +145,24 @@ class DAG:
         G = nx.DiGraph(self.adjacency_matrix)
         edge_labels = nx.get_edge_attributes(G, 'weight')
 
-        pos=nx.spring_layout(G)
+        pos=nx.spring_layout(G, k=0.5, iterations=20)
         fs = 15
         nx.draw(G, pos = pos, node_size=1000, node_color="skyblue", edge_color="black", width=3, font_size=fs, font_weight='bold', arrowsize=10, with_labels=True)
         nx.draw_networkx_edge_labels(G, pos = pos, edge_labels=edge_labels, font_size=fs, font_weight='bold')
 
+        variances = self.get_analytical_var()
+
+        labeldict = {}
+        for i in range(self.size):
+            labeldict[i] = f"VAR: {variances[i]:.2f}"
+
+        pos_higher = {}
+        y_off = 0.1
+
+        for k, v in pos.items():
+            pos_higher[k] = (v[0], v[1]+y_off)
+
+        nx.draw_networkx_labels(G, pos = pos_higher, font_size=fs, font_weight='bold', labels=labeldict, font_color="skyblue")
         plt.show()
 
     def adj2edges(self):
@@ -204,7 +221,10 @@ class DAG:
         return self.get_simulated_data(N).var(axis = 1)
 
     def mutate(self, p = 0.5):
-        _adja = self.adjacency_matrix.copy().astype(float)
+        if self.integer:
+            _adja = self.adjacency_matrix.copy().astype(int)
+        else:
+            _adja = self.adjacency_matrix.copy().astype(float)
         # mutate edges
         for i in range(self.size):
             for j in range(self.size):
@@ -214,7 +234,15 @@ class DAG:
                     continue
 
                 if np.random.uniform(0, 1) < p:
-                    edge = min(max(-self.strength, (_adja[i, j] + np.random.normal(0, self.strength/2))), self.strength)
+                    if self.integer:
+                        low, high = int(max(_adja[i, j] - 1, -self.strength)), int(min(_adja[i, j] + 1, self.strength))
+                        low = low - 1 if low == 0 else low
+                        high = high + 1 if high == 0 else high
+
+                        edge = np.random.choice([low, high])
+                    else:
+                        edge = min(max(-self.strength, (_adja[i, j] + np.random.normal(0, self.strength/2))), self.strength)
+
                     _adja[i, j] = edge
                 else:
                     edge = self.adjacency_matrix[i, j]
@@ -224,7 +252,7 @@ class DAG:
                     print("edge is 0", i, j)
 
         # make child
-        child = DAG(n = self.size, adjacency_matrix = _adja, biass = self.biass, strength = self.strength)
+        child = DAG(n = self.size, adjacency_matrix = _adja, biass = self.biass, strength = self.strength, integer = self.integer)
         return child
 
     def get_simulated_data(self, N = 100):
