@@ -77,8 +77,8 @@ class DAG:
 
         return adjacency_matrix
 
-    def get_varsortability(self, analytical = False, simulated = False, N = 1000):
-        assert analytical or simulated, "must calculate at least one of analytical or simulated"
+    def get_varsortability(self, analytical = False, simulated = False, smart = False, N = 1000):
+        assert analytical or simulated or smart, "must calculate at least one of analytical, simulated or smart"
         _return = {}
         if analytical:
             ana = self.get_analytical_var()
@@ -88,6 +88,9 @@ class DAG:
             sim = self.get_simulated_var(N)
             simulated = self.varsortability(sim)
             _return["simulated"] = simulated
+        if smart:
+                smart = self.get_smart_vasortability()
+                _return["smart"] = 1-smart
 
         return _return
 
@@ -282,3 +285,27 @@ class DAG:
                 adj[root, :] = 0
 
         return values
+
+    def get_smart_vasortability(self, tol=1e-9):
+        """ Takes n x d data and a d x d adjaceny matrix,
+        where the i,j-th entry corresponds to the edge weight for i->j,
+        and returns a value indicating how well the variance order
+        reflects the causal order. """
+        X = self.get_simulated_data(100000)
+        W = self.adjacency_matrix
+        E = W != 0
+        Ek = E.copy()
+        var = np.var(X, axis=1, keepdims=True)
+
+        n_paths = 0
+        n_correctly_ordered_paths = 0
+
+        for _ in range(E.shape[0] - 1):
+            n_paths += Ek.sum()
+            n_correctly_ordered_paths += (Ek * var / var.T > 1 + tol).sum()
+            n_correctly_ordered_paths += 1/2*(
+                (Ek * var / var.T <= 1 + tol) *
+                (Ek * var / var.T >  1 - tol)).sum()
+            Ek = Ek.dot(E)
+
+        return n_correctly_ordered_paths / n_paths
