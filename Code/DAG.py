@@ -89,7 +89,7 @@ class DAG:
             simulated = self.varsortability(sim)
             _return["simulated"] = simulated
         if smart:
-                smart = self.get_smart_vasortability()
+                smart = self.get_smart_vasortability(N)
                 _return["smart"] = 1-smart
 
         return _return
@@ -115,7 +115,7 @@ class DAG:
             self.precalculate_paths()
 
         for i in range(self.size):
-            for j in range(self.size):
+            for j in range(i, self.size):
                 if i == j:
                     continue
                 for p in self.paths[i,j]:
@@ -124,7 +124,11 @@ class DAG:
                         sortable += 1
                     elif variances[p[0][0]] == variances[p[-1][1]]:
                         sortable += 0.5
+                    else:
+                        print("WTH")
+                        print(variances[p[0][0]], variances[p[-1][1]])
 
+        print("N", N)
         return sortable / N
 
     def continous_varsortability(self, variances):
@@ -148,7 +152,7 @@ class DAG:
         G = nx.DiGraph(self.adjacency_matrix)
         edge_labels = nx.get_edge_attributes(G, 'weight')
 
-        pos=nx.spring_layout(G, k=0.5, iterations=20)
+        pos=nx.spring_layout(G, k=0.5, iterations=30)
         fs = 15
         nx.draw(G, pos = pos, node_size=1000, node_color="skyblue", edge_color="black", width=3, font_size=fs, font_weight='bold', arrowsize=10, with_labels=True)
         nx.draw_networkx_edge_labels(G, pos = pos, edge_labels=edge_labels, font_size=fs, font_weight='bold')
@@ -286,13 +290,14 @@ class DAG:
 
         return values
 
-    def get_smart_vasortability(self, tol=1e-9):
+    def get_smart_vasortability(self, N = 100000, tol=1e-9):
         """ Takes n x d data and a d x d adjaceny matrix,
         where the i,j-th entry corresponds to the edge weight for i->j,
         and returns a value indicating how well the variance order
         reflects the causal order. """
-        X = self.get_simulated_data(100000)
+        X = self.get_simulated_data(N)
         W = self.adjacency_matrix
+
         E = W != 0
         Ek = E.copy()
         var = np.var(X, axis=1, keepdims=True)
@@ -307,5 +312,5 @@ class DAG:
                 (Ek * var / var.T <= 1 + tol) *
                 (Ek * var / var.T >  1 - tol)).sum()
             Ek = Ek.dot(E)
-
+        print("smart: ", n_paths)
         return n_correctly_ordered_paths / n_paths
