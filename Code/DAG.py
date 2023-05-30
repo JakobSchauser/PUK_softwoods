@@ -124,11 +124,7 @@ class DAG:
                         sortable += 1
                     elif variances[p[0][0]] == variances[p[-1][1]]:
                         sortable += 0.5
-                    else:
-                        print("WTH")
-                        print(variances[p[0][0]], variances[p[-1][1]])
 
-        print("N", N)
         return sortable / N
 
     def continous_varsortability(self, variances):
@@ -214,6 +210,9 @@ class DAG:
     def get_analytical_var(self):
         return np.array([self.analytical_var_node(i) for i in range(self.size)])
 
+    def get_smart_var(self, N = 100000):
+        return np.random.randn(N, self.size).dot(np.linalg.inv(np.eye(self.size) - self.adjacency_matrix)).var(axis = 0)
+
     def find_all_paths(self, edges, src, dest):
         if (src == dest):
             return [[]]
@@ -290,17 +289,25 @@ class DAG:
 
         return values
 
+    def get_simulated_data_smart(self, N = 100000):
+        X = np.random.randn(N, self.size).dot(np.linalg.inv(np.eye(self.size) - self.adjacency_matrix))
+        return X
+
     def get_smart_vasortability(self, N = 100000, tol=1e-9):
         """ Takes n x d data and a d x d adjaceny matrix,
         where the i,j-th entry corresponds to the edge weight for i->j,
         and returns a value indicating how well the variance order
         reflects the causal order. """
-        X = self.get_simulated_data(N)
+        # X = self.get_simulated_data(N)
+
+
+        X = self.get_simulated_data_smart(N)
+
         W = self.adjacency_matrix
 
         E = W != 0
         Ek = E.copy()
-        var = np.var(X, axis=1, keepdims=True)
+        var = np.var(X, axis = 0, keepdims=True)
 
         n_paths = 0
         n_correctly_ordered_paths = 0
@@ -312,5 +319,6 @@ class DAG:
                 (Ek * var / var.T <= 1 + tol) *
                 (Ek * var / var.T >  1 - tol)).sum()
             Ek = Ek.dot(E)
-        print("smart: ", n_paths)
-        return n_correctly_ordered_paths / n_paths
+
+
+        return 1 - n_correctly_ordered_paths / n_paths
