@@ -6,7 +6,7 @@ from pyvis.network import Network
 
 
 class DAG:
-    def __init__(self, adjacency_matrix = None, biass = None, n = 5, strength = 2, roots = 1, precalculate_paths = False, integer = False):
+    def __init__(self, adjacency_matrix = None, biass = None, n = 5, strength = 2, roots = 1, precalculate_paths = False, integer = False, connectivity = 0.5):
         assert n > 0, "n must be greater than 0"
         assert roots > 0, "roots must be greater than 0"
         if biass is not None:
@@ -14,7 +14,7 @@ class DAG:
                 assert len(biass) == adjacency_matrix.shape[0], "biass must be of same size as adjacency matrix"
             else:
                 assert len(biass) == n, "biass must be of size n"
-
+        self.connectivity = connectivity
         self.strength = strength
         self.roots = roots
         self.integer = integer
@@ -23,7 +23,7 @@ class DAG:
             self.adjacency_matrix = adjacency_matrix
             self.size = adjacency_matrix.shape[0]
         else:
-            self.adjacency_matrix = self.random_dag(n = n, strength = strength, roots = roots)
+            self.adjacency_matrix = self.random_dag(n = n, strength = strength, roots = roots, connectivity = connectivity)
             self.size = n
 
         if biass is not None:
@@ -49,16 +49,20 @@ class DAG:
 
         self.paths = pths.copy()
 
-    def random_dag(self, n = 5, strength = 2, roots = 1):
+    def random_dag(self, n = 5, strength = 2, roots = 1, connectivity = 0.5):
         adjacency_matrix = np.zeros((n, n))
 
         for i in range(n):
             for j in range(i+1, n):
-                if np.random.randint(0, 2) == 0:
+                if np.random.uniform() < connectivity:
                     if self.integer:
                         edge = np.random.choice([i for i in range(-strength, strength+1) if i != 0])
                     else:
-                        edge = np.random.uniform(-strength, strength)
+                        if np.random.uniform() < 0.5:
+                            edge = np.random.uniform(0.5, strength)
+                        else:
+                            edge = np.random.uniform(-strength, -0.5)
+
                 else:
                     edge = 0
 
@@ -69,7 +73,12 @@ class DAG:
         # make sure each node has at least one parent
         for i in range(roots, n):
             if np.sum(adjacency_matrix[:, i]) == 0:
-                adjacency_matrix[np.random.randint(0, i), i] = 1
+                edge = 1
+                if np.random.uniform() < 0.5:
+                    edge = np.random.uniform(0.5, strength)
+                else:
+                    edge = np.random.uniform(-strength, -0.5)
+                adjacency_matrix[np.random.randint(0, i), i] = edge
                 
         # make sure roots have no parents
         for i in range(roots):
