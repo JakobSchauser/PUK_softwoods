@@ -103,8 +103,8 @@ class DAG:
 
         return _return
 
-    def get_continous_varsortability(self, analytical = False, simulated = False, N = 1000):
-        assert analytical or simulated, "must calculate at least one of analytical or simulated"
+    def get_continous_varsortability(self, analytical = False, simulated = False, smart = False, N = 1000):
+        assert analytical or simulated or smart, "must calculate at least one of analytical, simulated or smart"
         _return = {}
         if analytical:
             ana = self.get_analytical_var()
@@ -114,7 +114,10 @@ class DAG:
             sim = self.get_simulated_var(N)
             simulated = self.continous_varsortability(sim)
             _return["simulated"] = simulated
-
+        if smart:
+            sim = self.get_smart_var(N)
+            smart = self.continous_varsortability(sim)
+            _return["smart"] = smart
         return _return
 
     def varsortability(self, variances):

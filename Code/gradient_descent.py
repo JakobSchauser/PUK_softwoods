@@ -18,7 +18,7 @@ def loss_fn(x, bool_adj):
                 k += 1
     
     d = DAG(n = bool_adj.shape[0], strength=2, precalculate_paths = False, adjacency_matrix = ad)
-    return d.get_continous_varsortability(analytical = True, simulated = False, N = 10000000)["analytical"]
+    return d.get_continous_varsortability(simulated = True, N = 100000)["simulated"]
 
 
 def varsortability(x, bool_adj):
@@ -32,13 +32,13 @@ def varsortability(x, bool_adj):
                 k += 1
     
     d = DAG(n = bool_adj.shape[0],  strength=2, precalculate_paths = False, adjacency_matrix = ad)
-    return d.get_varsortability(analytical = True)["analytical"]
+    return d.get_varsortability(smart = True, N = 100000)["smart"]
 
 
 
 
 
-def gradient_descent(dag, VERBOSE = False, num_iterations = 100, lr = 0.1):
+def gradient_descent(dag, VERBOSE = False, num_iterations = 100, lr = 0.1, adaptive = True):
     """
     Performs gradient descent on the loss function to find the optimal values for the parameters.
     dag is a DAG object
@@ -48,6 +48,7 @@ def gradient_descent(dag, VERBOSE = False, num_iterations = 100, lr = 0.1):
     n = np.sum(bool_adj)
     # Initialize the parameters
     learning_rate = lr
+    start_lr = learning_rate
     num_iterations = num_iterations
 
     initial_guess = np.ones(n)  # Initial guess for the parameters
@@ -55,6 +56,8 @@ def gradient_descent(dag, VERBOSE = False, num_iterations = 100, lr = 0.1):
     # Gradient descent loop
     current_guess = initial_guess.copy()
     for i in range(num_iterations):
+        if adaptive:
+            learning_rate = start_lr * (1 - (i/num_iterations)/10)
         gradient = np.zeros(n)  # Initialize gradient to zero
 
         # Compute the gradient by finite differences
