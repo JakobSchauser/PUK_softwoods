@@ -74,10 +74,13 @@ class DAG:
         for i in range(roots, n):
             if np.sum(adjacency_matrix[:, i]) == 0:
                 edge = 1
-                if np.random.uniform() < 0.5:
-                    edge = np.random.uniform(0.5, strength)
+                if self.integer:
+                        edge = np.random.choice([i for i in range(-strength, strength+1) if i != 0])
                 else:
-                    edge = np.random.uniform(-strength, -0.5)
+                    if np.random.uniform() < 0.5:
+                        edge = np.random.uniform(0.5, strength)
+                    else:
+                        edge = np.random.uniform(-strength, -0.5)
                 adjacency_matrix[np.random.randint(0, i), i] = edge
                 
         # make sure roots have no parents
@@ -151,7 +154,7 @@ class DAG:
 
                 if (variances[i] + variances[j]) == 0:
                     print("WTH")
-                numerator += int(np.sign(variances[j] - variances[i]) > 0) + (variances[j] - variances[i]) / np.max([variances[j] + variances[i], 1e-10])
+                numerator += int(np.sign(variances[j] - variances[i]) > 0) + (variances[j] - variances[i]) / np.max([np.power(variances[j] + variances[i], 1.2), 1e-11])
 
         return numerator 
         
@@ -272,6 +275,22 @@ class DAG:
         # make child
         child = DAG(n = self.size, adjacency_matrix = _adja, biass = self.biass, strength = self.strength, integer = self.integer)
         return child
+
+    def mutate_flip(self, p = 0.1):
+        _adja = self.adjacency_matrix.copy().astype(int if self.integer else float)
+
+        for i in range(self.size):
+            for j in range(i+1, self.size):
+                if _adja[i,j] == 0:
+                    continue
+                if np.random.uniform() > p:
+                    continue
+
+                _adja[i,j] = -_adja[i,j]
+
+        child = DAG(n = self.size, adjacency_matrix = _adja, biass = self.biass, strength = self.strength, integer = self.integer)
+        return child
+
 
     def get_simulated_data(self, N = 100):
         adj = self.adjacency_matrix.copy()
