@@ -6,11 +6,19 @@ from pyvis.network import Network
 
 
 class DAG:
-    def __init__(self, adjacency_matrix = None, biass = None, n = 5, strength = 2, roots = 1, precalculate_paths = False, integer = False, connectivity = 0.5):
+    def __init__(self, adjacency_matrix = None, biass = None, n = 2, strength = 2, roots = 1, precalculate_paths = False, integer = False, connectivity = 0.5):
         assert n > 0, "n must be greater than 0"
         assert roots > 0, "roots must be greater than 0"
+
+        self.biass_value = biass
+
         if biass is not None:
-            if adjacency_matrix is not None: 
+            if biass == 'uniform':
+                if adjacency_matrix is not None:
+                    biass = np.random.uniform(0, 2, size=adjacency_matrix.shape[0])**2
+                else:
+                    biass = np.random.uniform(0, 2, size=n)**2
+            elif adjacency_matrix is not None: 
                 assert len(biass) == adjacency_matrix.shape[0], "biass must be of same size as adjacency matrix"
             else:
                 assert len(biass) == n, "biass must be of size n"
@@ -28,6 +36,8 @@ class DAG:
 
         if biass is not None:
             self.biass = biass
+        elif adjacency_matrix is not None:
+            self.biass = np.ones(adjacency_matrix.shape[0])
         else:
             self.biass = np.ones(n)
 
@@ -222,8 +232,8 @@ class DAG:
     def get_analytical_var(self):
         return np.array([self.analytical_var_node(i) for i in range(self.size)])
 
-    def get_smart_var(self, N = 100000):
-        return np.random.randn(N, self.size).dot(np.linalg.inv(np.eye(self.size) - self.adjacency_matrix)).var(axis = 0)
+    def get_smart_var(self, N = 10000):
+        return np.random.normal(loc=0,scale=np.sqrt(self.biass),size=(N,len(self.biass))).dot(np.linalg.inv(np.eye(self.size) - self.adjacency_matrix)).var(axis = 0)
 
     def find_all_paths(self, edges, src, dest):
         if (src == dest):
@@ -302,7 +312,7 @@ class DAG:
         return values
 
     def get_simulated_data_smart(self, N = 100000):
-        X = np.random.randn(N, self.size).dot(np.linalg.inv(np.eye(self.size) - self.adjacency_matrix))
+        X = np.random.normal(loc=0,scale=np.sqrt(self.biass),size=(N,len(self.biass))).dot(np.linalg.inv(np.eye(self.size) - self.adjacency_matrix))
         return X
 
     def get_smart_vasortability(self, N = 100000, tol=1e-9):

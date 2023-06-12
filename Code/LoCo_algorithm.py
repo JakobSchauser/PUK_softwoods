@@ -29,7 +29,6 @@ def run_loco(dag, update_by_varsort=False,maximize_genghisnodes=False, maximize_
         if len(ways_into_node) < 2:
             continue
 
-        
         if check_ways:
             ways = np.empty((len(ways_into_node), dag.size))
             for i, way_into_node in enumerate(ways_into_node):
@@ -68,7 +67,6 @@ def run_loco(dag, update_by_varsort=False,maximize_genghisnodes=False, maximize_
         else:
             usable_ways = list(set(ways_into_node))
 
-
         # try all combinations using itertools combinations
         all_combinations_up_to = list(all_combinations(usable_ways, flip_up_to))
 
@@ -81,7 +79,7 @@ def run_loco(dag, update_by_varsort=False,maximize_genghisnodes=False, maximize_
                 matrix_w_flip[uw, node] *= -1
 
             # Calculate new variance of node
-            new_dag = DAG(n = dag.size, adjacency_matrix = matrix_w_flip, integer = dag.integer) #maybe implement function without initializing DAG
+            new_dag = DAG(n = dag.size, biass=dag.biass, adjacency_matrix = matrix_w_flip, integer = dag.integer) #maybe implement function without initializing DAG
             if update_by_varsort:
                 var = new_varsort = new_dag.get_varsortability( analytical = False, simulated = False, smart = True, N = N)['smart']
             else:
@@ -113,7 +111,7 @@ def run_loco(dag, update_by_varsort=False,maximize_genghisnodes=False, maximize_
             for way in all_combinations_up_to[index]:
                 final_adj[way, node] *= -1
 
-    result_dag = DAG(adjacency_matrix = final_adj, integer = dag.integer)
+    result_dag = DAG(adjacency_matrix = final_adj, biass=dag.biass, integer = dag.integer)
 
     new_varsort = result_dag.get_varsortability( analytical = False, simulated = False, smart = True, N = 10000)['smart']
 
